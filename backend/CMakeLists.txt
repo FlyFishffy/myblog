@@ -40,9 +40,8 @@ FetchContent_MakeAvailable(crow json libpqxx)
 # ============================================
 add_executable(myblog-backend
     src/main.cpp
-    src/logger.cpp
     src/database.cpp
-    src/routes.cpp
+    src/routes/post_routes.cpp
 )
 
 # 头文件搜索路径

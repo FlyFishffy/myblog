@@ -77,7 +77,7 @@ private:
     Logger() = default;
     ~Logger() 
     {
-        if (file_stream.is_open())
+        if (file_stream_.is_open())
         {
             file_stream_.close();
         }
@@ -93,7 +93,7 @@ private:
     {
         auto now = std::chrono::system_clock::now();
         auto time_t_now = std::chrono::system_clock::to_time_t(now);
-        auto ms = std::chrono::duration::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
         std::tm tm_buf;
 #ifdef _WIN32
@@ -204,3 +204,5 @@ private:
 
 #define LOG_SET_LEVEL(level) Logger::set_level(level)
 #define LOG_SET_FILE(path)   Logger::set_file(path)
+
+#endif

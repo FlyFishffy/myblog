@@ -1,13 +1,19 @@
 #include "database.h"
+#include "logger.h"
 
-#include <iostream>
 #include <stdexcept>
-#include <condition_variable>
+#include <string>
+#include <vector>
+
 
 namespace blog
 {
-    
-    ConnectionPool::ConnectionPool(const str::string& conn_str, int pool_size)
+
+    // =================================
+    // ConnectionPool
+    // =================================
+
+    ConnectionPool::ConnectionPool(const std::string& conn_str, int pool_size)
         : conn_str_(conn_str)
     {
         for (int i = 0; i < pool_size; i++)
@@ -18,14 +24,196 @@ namespace blog
                 if (conn->is_open())
                 {
                     pool_.push(conn);
-                    std::cout << 
+                    LOG_DEBUG("No: {} connetion created successfully.", i + 1);
+                }
+                else
+                {
+                    LOG_ERROR("No: {} connection created failed.", i + 1);
                 }
             }
             catch(const std::exception& e)
             {
-                std::cerr << e.what() << '\n';
+                LOG_ERROR("failed to creat database connection: {}", e.what());
+                throw;
             }
-            
+        }
+        LOG_INFO("database created successfully, created {} connections.", pool_.size());
+    }
+
+    ConnectionPool::~ConnectionPool()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!pool_.empty())
+        {
+            pool_.pop();
+        }
+        LOG_INFO("database pool closed.");
+    }
+
+    std::shared_ptr<pqxx::connection> ConnectionPool::acquire()
+    {
+        std::unique_ptr<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this]() { return !pool_.empty(); });
+
+        auto conn = pool_.front();
+        pool_.pop();
+        return conn;
+    }
+
+    void ConnectionPool::release(std::shared_ptr<pqxx::connection> conn)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        pool_.push(conn);
+        cv_.notify_one();
+    } 
+
+    ConnectionPool::ConnectionGuard ConnectionPool::get_connection()
+    {
+        auto conn = acquire();
+        return ConnectionGuard(conn, *this);
+    }
+
+    // =================================
+    // ConnectionGuard
+    // =================================
+
+    ConnectionPool::ConnectionGuard::ConnectionGuard(
+        std::shared_ptr<pqxx::connection> conn, ConnectionPool& pool)
+        : conn_(std::move(conn), pool_(&pool))
+    {
+
+    }
+
+    ConnectionPool::ConnectionGuard::~ConnectionGuard()
+    {
+        if (conn_ && pool_)
+        {
+            pool_->release(conn_);
+        }
+    }
+
+    ConnectionPool::ConnectionGuard::ConnectionGuard(ConnectionGuard&& other) noexcept
+        : conn_(std::move(other.conn_)), pool_(other.pool_)
+    {
+        other.pool_ = nullptr;
+    }
+
+    ConnectionPool::ConnectionGuard& ConnectionPool::ConnectionGuard::operator=(ConnectionGuard&& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (conn_ && pool_)
+            {
+                pool_->release(conn_);
+            }
+            conn_ = std::move(other.conn_);
+            pool_ = other.pool_;
+            other.pool_ = nullptr;
+        }
+        return *this;
+    }
+
+    pqxx::connection& ConnectionPool::ConnectionGuard::get()
+    {
+        return *conn_;
+    }
+
+    pqxx::connection* ConnectionPool::ConnectionGuard::operator->()
+    {
+        return conn_.get();
+    }
+
+    // =================================
+    // Database
+    // =================================
+
+    Database::Database(const std::string& conn_str, int pool_size)
+        : pool_(conn_str, pool_size)
+    {
+        LOG_INFO("init database successfully.")
+    }
+
+    Post Database::row_to_post(const pqxx::row& row, bool with_content)
+    {
+        Post post;
+        post.id         = row["id"].as<int>();
+        post.title      = row["title"].as<std::string>();
+        post.slug       = row["slug"].as<std::string>();
+        post.summary    = row["summary"].as<std::string>();
+        post.tags       = row["tags"].as<std::string>();
+        post.word_count = row["word_count"].as<int>(0);
+        post.created_at = row["created_at"].as<std::string>();
+        post.updated_at = row["updated_at"].as<std::string>();
+
+        if (with_content) 
+        {
+            post.content = row["content"].as<std::string>();
+        }
+
+        return post;
+    }
+
+    std::vector<Post> Database::get_all_posts()
+    {
+        try
+        {
+            auto guard = pool_.get_connection();
+            pqxx::work txn(guard.get());
+
+            pqxx::result rows = txn.exec(
+                "SELECT id, title, slug, summary, tags, word_count, "
+                "to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at, "
+                "to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') as updated_at "
+                "FROM posts ORDER BY created_at DESC"
+            );
+            txn.commit();
+
+            std::vector<Post> posts;
+            posts.reserve(rows.size());
+            for (const auto& row : rows)
+            {
+                posts.push_back(row_to_post(row, false));
+            }
+
+            LOG_INFO("获get article successfully, total num: {}", posts.size());
+            return posts;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("get article list failed: {}", e.what());
+            throw;
+        }
+    }
+
+    std::optional<Post> Database::get_post_by_slug(const std::string& slug)
+    {
+        try
+        {
+            auto guard = pool_.get_connection();
+            pqxx::work txn(guard.get());
+
+            pqxx::result rows = txn.exec_params(
+                "SELECT id, title, slug, summary, content, tags, word_count, "
+                "to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at, "
+                "to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') as updated_at "
+                "FROM posts WHERE slug = $1",
+                slug
+            );
+            txn.commit();
+
+            if (rows.empty())
+            {
+                LOG_WARN("article not exist: {}", slug);
+                return std::nullopt;
+            }
+
+            LOG_INFO("get article successfully: {}", slug);
+            return row_to_post(rows[0], true);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("get article failed: {}", e.what());
+            throw;
         }
     }
 

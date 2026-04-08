@@ -18,6 +18,12 @@ public:
     ConnectionPool(const std::string& conn_str, int pool_size = 5);
     ~ConnectionPool();
 
+    // 从连接池获取连接
+    std::shared_ptr<pqxx::connection> acquire();
+
+    // 将连接归还到连接池
+    void release(std::shared_ptr<pqxx::connection> conn);
+
     class ConnectionGuard
     {
     public:
@@ -35,12 +41,16 @@ public:
         std::shared_ptr<pqxx::connection> conn_;
         ConnectionPool* pool_;
     };
+
+    // 获取 RAII 连接守卫
+    ConnectionGuard get_connection();
+    
 private:
     std::queue<std::shared_ptr<pqxx::connection>> pool_;
     std::mutex mutex_;
     std::condition_variable cv_;
     std::string conn_str_;
-}
+};
 
 struct Post
 {
