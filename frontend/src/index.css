@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #222;
+  --bg-tertiary: #2a2a2a;
+  --bg-hover: #252525;
+  --bg-card: #222;
+  --border-primary: #333;
+  --border-secondary: #2a2a2a;
+  --text-title: #e8dcc8;
+  --text-body: #d4c5a9;
+  --text-muted: #b8a88a;
+  --text-dim: #999;
+  --text-faint: #888;
+  --text-ghost: #666;
+  --text-separator: #555;
+  --accent: #d4c5a9;
+  --accent-bg: #333;
+  --accent-active-bg: #d4c5a9;
+  --accent-active-text: #1a1a1a;
+  --warning-bg: #2a2200;
+  --warning-border: #554400;
+  --warning-text: #aa9944;
+}
+
+.light {
+  --bg-primary: #faf8f5;
+  --bg-secondary: #f0ede8;
+  --bg-tertiary: #e8e4de;
+  --bg-hover: #f0ede8;
+  --bg-card: #fff;
+  --border-primary: #ddd;
+  --border-secondary: #e8e4de;
+  --text-title: #1a1a1a;
+  --text-body: #333;
+  --text-muted: #555;
+  --text-dim: #777;
+  --text-faint: #999;
+  --text-ghost: #bbb;
+  --text-separator: #ccc;
+  --accent: #555;
+  --accent-bg: #e8e4de;
+  --accent-active-bg: #333;
+  --accent-active-text: #faf8f5;
+  --warning-bg: #fff8e0;
+  --warning-border: #e8d888;
+  --warning-text: #886600;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-body);
+    @apply font-sans antialiased;
+  }
+}
+
+/* Markdown content styles */
+.prose h1 {
+  color: var(--text-title);
+  @apply text-3xl font-bold mt-8 mb-4;
+}
+
+.prose h2 {
+  color: var(--text-title);
+  @apply text-2xl font-semibold mt-6 mb-3;
+}
+
+.prose h3 {
+  color: var(--text-title);
+  @apply text-xl font-semibold mt-5 mb-2;
+}
+
+.prose p {
+  color: var(--text-muted);
+  @apply leading-relaxed mb-4;
+}
+
+.prose ul {
+  @apply list-disc list-inside mb-4 space-y-1;
+}
+
+.prose ol {
+  @apply list-decimal list-inside mb-4 space-y-1;
+}
+
+.prose li {
+  color: var(--text-muted);
+}
+
+.prose a {
+  color: var(--text-body);
+  @apply hover:opacity-80 underline underline-offset-2;
+}
+
+.prose code {
+  background-color: var(--bg-tertiary);
+  color: var(--text-body);
+  @apply px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.prose pre {
+  @apply bg-[#111] text-[#ccc] rounded-lg p-4 overflow-x-auto mb-4;
+  border: 1px solid var(--border-primary);
+}
+
+.prose pre code {
+  @apply bg-transparent text-[#ccc] p-0;
+}
+
+.prose blockquote {
+  border-left: 4px solid var(--text-separator);
+  color: var(--text-dim);
+  @apply pl-4 italic my-4;
+}
+
+.prose strong {
+  color: var(--text-title);
+  @apply font-semibold;
+}
+
+.prose hr {
+  border-color: var(--border-primary);
+  @apply my-8;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-separator);
+}
