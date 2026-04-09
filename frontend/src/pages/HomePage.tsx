@@ -87,7 +87,7 @@ const TIME_RANGES = [
   { label: '最近一年', value: '365d' },
 ]
 
-function HomePage() {
+function HomePage({ isAdmin }: { isAdmin?: boolean }) {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [usingMock, setUsingMock] = useState(false)
@@ -273,7 +273,7 @@ function HomePage() {
 
       <div className="space-y-0">
         {filteredPosts.map(post => (
-          <PostCard key={post.id} post={post} />
+          <PostCard key={post.id} post={post} isAdmin={isAdmin} />
         ))}
       </div>
     </div>

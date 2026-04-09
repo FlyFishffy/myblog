@@ -51,3 +51,19 @@ export async function createPost(data: CreatePostData, token: string): Promise<P
   }
   return res.json();
 }
+
+export async function updatePost(slug: string, data: CreatePostData, token: string): Promise<Post> {
+  const res = await fetch(`${API_BASE}/posts/${slug}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Auth-Token': token,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(err.error || 'Failed to update post');
+  }
+  return res.json();
+}

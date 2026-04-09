@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage'
 import PostPage from './pages/PostPage'
 import AboutPage from './pages/AboutPage'
 import UploadPage from './pages/UploadPage'
+import EditPage from './pages/EditPage'
 
 const AUTH_TOKEN_KEY = 'blog_admin_token'
 
@@ -30,10 +31,11 @@ function AppContent() {
       <Header isAdmin={isAdmin} />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/post/:slug" element={<PostPage />} />
+          <Route path="/" element={<HomePage isAdmin={isAdmin} />} />
+          <Route path="/post/:slug" element={<PostPage isAdmin={isAdmin} />} />
           <Route path="/about" element={<AboutPage />} />
           {isAdmin && <Route path="/upload" element={<UploadPage />} />}
+          {isAdmin && <Route path="/edit/:slug" element={<EditPage />} />}
         </Routes>
       </main>
       <Footer />

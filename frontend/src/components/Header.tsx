@@ -20,10 +20,10 @@ function Header({ isAdmin }: { isAdmin?: boolean }) {
         </Link>
 
         <div className="flex items-center gap-6">
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-2">
             <Link
               to="/"
-              className="text-sm transition-colors"
+              className="text-sm transition-colors py-1 px-2 rounded"
               style={{
                 color: isActive('/') ? 'var(--text-title)' : 'var(--text-dim)',
                 textDecoration: isActive('/') ? 'underline' : 'none',
@@ -34,7 +34,7 @@ function Header({ isAdmin }: { isAdmin?: boolean }) {
             </Link>
             <Link
               to="/about"
-              className="text-sm transition-colors"
+              className="text-sm transition-colors py-1 px-2 rounded"
               style={{
                 color: isActive('/about') ? 'var(--text-title)' : 'var(--text-dim)',
                 textDecoration: isActive('/about') ? 'underline' : 'none',
@@ -46,7 +46,7 @@ function Header({ isAdmin }: { isAdmin?: boolean }) {
             {isAdmin && (
               <Link
                 to="/upload"
-                className="text-sm transition-colors"
+                className="text-sm transition-colors py-1 px-2 rounded"
                 style={{
                   color: isActive('/upload') ? 'var(--text-title)' : 'var(--text-dim)',
                   textDecoration: isActive('/upload') ? 'underline' : 'none',

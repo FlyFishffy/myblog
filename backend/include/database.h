@@ -74,6 +74,9 @@ public:
     Post create_post(const std::string& title, const std::string& slug,
                      const std::string& summary, const std::string& content,
                      const std::string& tags);
+    Post update_post(const std::string& slug, const std::string& title,
+                     const std::string& summary, const std::string& content,
+                     const std::string& tags);
 
 private:
     ConnectionPool pool_;

@@ -248,4 +248,41 @@ namespace blog
         }
     }
 
+    Post Database::update_post(const std::string& slug, const std::string& title,
+                               const std::string& summary, const std::string& content,
+                               const std::string& tags)
+    {
+        try
+        {
+            auto guard = pool_.get_connection();
+            pqxx::work txn(guard.get());
+
+            int word_count = static_cast<int>(content.size());
+
+            pqxx::result rows = txn.exec_params(
+                "UPDATE posts SET title = $1, summary = $2, content = $3, tags = $4, "
+                "word_count = $5, updated_at = NOW() "
+                "WHERE slug = $6 "
+                "RETURNING id, title, slug, summary, content, tags, word_count, "
+                "to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at, "
+                "to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') as updated_at",
+                title, summary, content, tags, word_count, slug
+            );
+            txn.commit();
+
+            if (rows.empty())
+            {
+                throw std::runtime_error("article not found: " + slug);
+            }
+
+            LOG_INFO("update article successfully: {}", slug);
+            return row_to_post(rows[0], true);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("update article failed: {}", e.what());
+            throw;
+        }
+    }
+
 } // namespace blog

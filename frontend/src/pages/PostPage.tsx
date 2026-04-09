@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { fetchPost } from '../api'
@@ -235,8 +235,9 @@ docker run -d --name postgres --network app-network postgres:16
   },
 }
 
-function PostPage() {
+function PostPage({ isAdmin }: { isAdmin?: boolean }) {
   const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -349,6 +350,26 @@ function PostPage() {
           )}
         </div>
       </header>
+
+      {/* Edit button for admin */}
+      {isAdmin && (
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(`/edit/${post.slug}`)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs transition-colors"
+            style={{
+              backgroundColor: 'var(--accent-bg)',
+              color: 'var(--text-dim)',
+              border: '1px solid var(--border-primary)',
+            }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            修改文章
+          </button>
+        </div>
+      )}
 
       <hr style={{ borderColor: 'var(--border-primary)' }} className="mb-8" />
 
