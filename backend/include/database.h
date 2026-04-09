@@ -71,6 +71,9 @@ public:
     explicit Database(const std::string& conn_str, int pool_size = 5);
     std::vector<Post> get_all_posts();
     std::optional<Post> get_post_by_slug(const std::string& slug);
+    Post create_post(const std::string& title, const std::string& slug,
+                     const std::string& summary, const std::string& content,
+                     const std::string& tags);
 
 private:
     ConnectionPool pool_;

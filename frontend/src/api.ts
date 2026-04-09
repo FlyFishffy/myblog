@@ -27,3 +27,27 @@ export async function fetchPost(slug: string): Promise<Post> {
   if (!res.ok) throw new Error('Post not found');
   return res.json();
 }
+
+export interface CreatePostData {
+  title: string;
+  slug: string;
+  summary: string;
+  content: string;
+  tags: string;
+}
+
+export async function createPost(data: CreatePostData, token: string): Promise<Post> {
+  const res = await fetch(`${API_BASE}/posts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Auth-Token': token,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(err.error || 'Failed to create post');
+  }
+  return res.json();
+}

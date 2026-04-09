@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - "-ID:/My Work/myblog/backend/include"
+    - "-std=c++20"

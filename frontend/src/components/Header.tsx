@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../ThemeContext'
 
-function Header() {
+function Header({ isAdmin }: { isAdmin?: boolean }) {
   const location = useLocation()
   const { theme, toggle } = useTheme()
 
@@ -43,6 +43,19 @@ function Header() {
             >
               关于
             </Link>
+            {isAdmin && (
+              <Link
+                to="/upload"
+                className="text-sm transition-colors"
+                style={{
+                  color: isActive('/upload') ? 'var(--text-title)' : 'var(--text-dim)',
+                  textDecoration: isActive('/upload') ? 'underline' : 'none',
+                  textUnderlineOffset: '4px',
+                }}
+              >
+                上传
+              </Link>
+            )}
           </nav>
 
           {/* Theme toggle */}

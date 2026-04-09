@@ -12,24 +12,20 @@ include(FetchContent)
 # Crow HTTP 框架
 FetchContent_Declare(
     crow
-    GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
-    GIT_TAG        v1.2.0
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/deps/crow
 )
 
 # nlohmann/json JSON库
 FetchContent_Declare(
     json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG        v3.11.3
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/deps/json
 )
 
 # libpqxx PostgreSQL C++ 客户端库
 FetchContent_Declare(
     libpqxx
-    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
-    GIT_TAG        7.9.2
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/deps/libpqxx
 )
-
 # 设置 libpqxx 选项：跳过构建测试
 set(SKIP_BUILD_TEST ON CACHE BOOL "" FORCE)
 
@@ -41,7 +37,7 @@ FetchContent_MakeAvailable(crow json libpqxx)
 add_executable(myblog-backend
     src/main.cpp
     src/database.cpp
-    src/routes/post_routes.cpp
+    src/post_routes.cpp
 )
 
 # 头文件搜索路径

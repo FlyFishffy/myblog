@@ -55,6 +55,7 @@ int main()
     // ========================================
     LOG_INFO("HTTP 服务启动，监听端口: 3639");
     app.port(3639)
+       .bindaddr("0.0.0.0")
        .multithreaded()
        .run();
 

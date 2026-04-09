@@ -113,6 +113,72 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
     });
 
     LOG_INFO("文章路由注册完成");
+
+    // -----------------------------------------
+    // POST /api/posts - 创建新文章 (需要 token 验证)
+    // 请求头: X-Auth-Token: flyfish
+    // 请求体: { "title", "slug", "summary", "content", "tags" }
+    // -----------------------------------------
+    CROW_ROUTE(app, "/api/posts").methods("POST"_method)
+    ([db](const crow::request& req) {
+        try
+        {
+            // Verify auth token
+            auto token = req.get_header_value("X-Auth-Token");
+            if (token != "flyfish")
+            {
+                json err;
+                err["error"] = "未授权访问";
+                auto res = crow::response(401, err.dump());
+                res.set_header("Content-Type", "application/json");
+                return res;
+            }
+
+            // Parse request body
+            auto body = json::parse(req.body);
+
+            std::string title   = body.value("title", "");
+            std::string slug    = body.value("slug", "");
+            std::string summary = body.value("summary", "");
+            std::string content = body.value("content", "");
+            std::string tags    = body.value("tags", "");
+
+            if (title.empty() || slug.empty() || content.empty())
+            {
+                json err;
+                err["error"] = "标题、Slug 和正文为必填项";
+                auto res = crow::response(400, err.dump());
+                res.set_header("Content-Type", "application/json");
+                return res;
+            }
+
+            auto post = db->create_post(title, slug, summary, content, tags);
+
+            auto res = crow::response(201, post_to_json(post, true).dump());
+            res.set_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const json::parse_error& e)
+        {
+            LOG_ERROR("创建文章请求体解析失败: {}", e.what());
+            json err;
+            err["error"]  = "请求体格式错误";
+            err["detail"] = e.what();
+            auto res = crow::response(400, err.dump());
+            res.set_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("创建文章接口异常: {}", e.what());
+            json err;
+            err["error"]  = "创建文章失败";
+            err["detail"] = e.what();
+            auto res = crow::response(500, err.dump());
+            res.set_header("Content-Type", "application/json");
+            return res;
+        }
+    });
 }
 
 } // namespace blog

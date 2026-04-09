@@ -215,6 +215,37 @@ namespace blog
             LOG_ERROR("get article failed: {}", e.what());
             throw;
         }
+    } // end of get_post_by_slug
+
+    Post Database::create_post(const std::string& title, const std::string& slug,
+                               const std::string& summary, const std::string& content,
+                               const std::string& tags)
+    {
+        try
+        {
+            auto guard = pool_.get_connection();
+            pqxx::work txn(guard.get());
+
+            int word_count = static_cast<int>(content.size());
+
+            pqxx::result rows = txn.exec_params(
+                "INSERT INTO posts (title, slug, summary, content, tags, word_count) "
+                "VALUES ($1, $2, $3, $4, $5, $6) "
+                "RETURNING id, title, slug, summary, content, tags, word_count, "
+                "to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at, "
+                "to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') as updated_at",
+                title, slug, summary, content, tags, word_count
+            );
+            txn.commit();
+
+            LOG_INFO("create article successfully: {}", slug);
+            return row_to_post(rows[0], true);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("create article failed: {}", e.what());
+            throw;
+        }
     }
 
 } // namespace blog
