@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
 import { fetchPost } from '../api'
 import type { Post } from '../api'
 
@@ -374,7 +375,7 @@ function PostPage({ isAdmin }: { isAdmin?: boolean }) {
       <hr style={{ borderColor: 'var(--border-primary)' }} className="mb-8" />
 
       <div className="prose">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
           {content}
         </ReactMarkdown>
       </div>

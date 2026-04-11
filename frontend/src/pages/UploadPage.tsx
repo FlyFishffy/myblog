@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
 import { createPost } from '../api'
 
 const AUTH_TOKEN_KEY = 'blog_admin_token'
@@ -162,7 +163,7 @@ function UploadPage() {
               style={{ ...inputStyle, minHeight: '400px' }}
             >
               {content ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown>
               ) : (
                 <p className="text-sm" style={{ color: 'var(--text-faint)' }}>暂无内容可预览</p>
               )}
