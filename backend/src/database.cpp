@@ -1,7 +1,6 @@
 #include "database.h"
 #include "logger.h"
 
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -52,7 +51,7 @@ namespace blog
 
     std::shared_ptr<pqxx::connection> ConnectionPool::acquire()
     {
-        std::unique_ptr<std::mutex> lock(mutex_);
+        std::unique_lock<std::mutex> lock(mutex_);
         cv_.wait(lock, [this]() { return !pool_.empty(); });
 
         auto conn = pool_.front();
@@ -79,7 +78,7 @@ namespace blog
 
     ConnectionPool::ConnectionGuard::ConnectionGuard(
         std::shared_ptr<pqxx::connection> conn, ConnectionPool& pool)
-        : conn_(std::move(conn), pool_(&pool))
+        : conn_(std::move(conn)), pool_(&pool)
     {
 
     }
@@ -130,7 +129,7 @@ namespace blog
     Database::Database(const std::string& conn_str, int pool_size)
         : pool_(conn_str, pool_size)
     {
-        LOG_INFO("init database successfully.")
+        LOG_INFO("init database successfully.");
     }
 
     Post Database::row_to_post(const pqxx::row& row, bool with_content)

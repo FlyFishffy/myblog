@@ -8,6 +8,7 @@
 #include <pqxx/pqxx>
 #include <mutex>
 #include <optional>
+#include <condition_variable>
 
 namespace blog
 {
