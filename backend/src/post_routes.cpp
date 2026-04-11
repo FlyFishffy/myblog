@@ -3,8 +3,11 @@
  * @brief 文章相关 API 路由 - 实现
  * 
  * 对应前端 api.ts 中的接口：
- *   GET /api/posts       -> fetchPosts()
- *   GET /api/posts/:slug -> fetchPost(slug)
+ *   GET    /api/posts       -> fetchPosts()
+ *   POST   /api/posts       -> createPost()
+ *   GET    /api/posts/:slug -> fetchPost(slug)
+ *   PUT    /api/posts/:slug -> updatePost(slug)
+ *   DELETE /api/posts/:slug -> deletePost(slug)
  */
 
 #include "routes/post_routes.h"
@@ -39,102 +42,76 @@ static json post_to_json(const Post& post, bool with_content = false)
     return j;
 }
 
+/**
+ * @brief 验证请求中的 auth token
+ * @return true if token is valid
+ */
+static bool verify_token(const crow::request& req)
+{
+    return req.get_header_value("X-Auth-Token") == "flyfish";
+}
+
+/**
+ * @brief 构建 JSON 错误响应
+ */
+static crow::response error_response(int code, const std::string& error, const std::string& detail = "")
+{
+    json err;
+    err["error"] = error;
+    if (!detail.empty())
+    {
+        err["detail"] = detail;
+    }
+    auto res = crow::response(code, err.dump());
+    res.set_header("Content-Type", "application/json");
+    return res;
+}
+
 void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
 {
     // -----------------------------------------
-    // GET /api/posts - 获取文章列表
-    // 返回格式: { "posts": [...], "total": N }
+    // /api/posts - GET (list) + POST (create)
+    // Merged into one CROW_ROUTE to avoid Crow overwrite issue
     // -----------------------------------------
-    CROW_ROUTE(app, "/api/posts").methods("GET"_method)
-    ([db]() {
-        try
-        {
-            auto posts = db->get_all_posts();
-
-            json posts_array = json::array();
-            for (const auto& post : posts)
-            {
-                posts_array.push_back(post_to_json(post, false));
-            }
-
-            json response;
-            response["posts"] = posts_array;
-            response["total"] = static_cast<int>(posts.size());
-
-            auto res = crow::response(200, response.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-        catch (const std::exception& e)
-        {
-            LOG_ERROR("获取文章列表接口异常: {}", e.what());
-            json err;
-            err["error"]  = "获取文章列表失败";
-            err["detail"] = e.what();
-            auto res = crow::response(500, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-    });
-
-    // -----------------------------------------
-    // GET /api/posts/<slug> - 根据 slug 获取文章详情
-    // 返回格式: { "id": ..., "title": ..., "content": ..., ... }
-    // -----------------------------------------
-    CROW_ROUTE(app, "/api/posts/<string>").methods("GET"_method)
-    ([db](const std::string& slug) {
-        try
-        {
-            auto post = db->get_post_by_slug(slug);
-
-            if (!post.has_value())
-            {
-                json err;
-                err["error"] = "文章不存在";
-                auto res = crow::response(404, err.dump());
-                res.set_header("Content-Type", "application/json");
-                return res;
-            }
-
-            auto res = crow::response(200, post_to_json(post.value(), true).dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-        catch (const std::exception& e)
-        {
-            LOG_ERROR("获取文章详情接口异常: {}", e.what());
-            json err;
-            err["error"]  = "获取文章详情失败";
-            err["detail"] = e.what();
-            auto res = crow::response(500, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-    });
-
-    LOG_INFO("文章路由注册完成");
-
-    // -----------------------------------------
-    // POST /api/posts - 创建新文章 (需要 token 验证)
-    // 请求头: X-Auth-Token: flyfish
-    // 请求体: { "title", "slug", "summary", "content", "tags" }
-    // -----------------------------------------
-    CROW_ROUTE(app, "/api/posts").methods("POST"_method)
+    CROW_ROUTE(app, "/api/posts").methods("GET"_method, "POST"_method)
     ([db](const crow::request& req) {
-        try
+
+        // ===== GET /api/posts =====
+        if (req.method == crow::HTTPMethod::GET)
         {
-            // Verify auth token
-            auto token = req.get_header_value("X-Auth-Token");
-            if (token != "flyfish")
+            try
             {
-                json err;
-                err["error"] = "未授权访问";
-                auto res = crow::response(401, err.dump());
+                auto posts = db->get_all_posts();
+
+                json posts_array = json::array();
+                for (const auto& post : posts)
+                {
+                    posts_array.push_back(post_to_json(post, false));
+                }
+
+                json response;
+                response["posts"] = posts_array;
+                response["total"] = static_cast<int>(posts.size());
+
+                auto res = crow::response(200, response.dump());
                 res.set_header("Content-Type", "application/json");
                 return res;
             }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR("获取文章列表接口异常: {}", e.what());
+                return error_response(500, "获取文章列表失败", e.what());
+            }
+        }
 
-            // Parse request body
+        // ===== POST /api/posts =====
+        try
+        {
+            if (!verify_token(req))
+            {
+                return error_response(401, "未授权访问");
+            }
+
             auto body = json::parse(req.body);
 
             std::string title   = body.value("title", "");
@@ -145,11 +122,7 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
 
             if (title.empty() || slug.empty() || content.empty())
             {
-                json err;
-                err["error"] = "标题、Slug 和正文为必填项";
-                auto res = crow::response(400, err.dump());
-                res.set_header("Content-Type", "application/json");
-                return res;
+                return error_response(400, "标题、Slug 和正文为必填项");
             }
 
             auto post = db->create_post(title, slug, summary, content, tags);
@@ -161,118 +134,98 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
         catch (const json::parse_error& e)
         {
             LOG_ERROR("创建文章请求体解析失败: {}", e.what());
-            json err;
-            err["error"]  = "请求体格式错误";
-            err["detail"] = e.what();
-            auto res = crow::response(400, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
+            return error_response(400, "请求体格式错误", e.what());
         }
         catch (const std::exception& e)
         {
             LOG_ERROR("创建文章接口异常: {}", e.what());
-            json err;
-            err["error"]  = "创建文章失败";
-            err["detail"] = e.what();
-            auto res = crow::response(500, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
+            return error_response(500, "创建文章失败", e.what());
         }
     });
 
     // -----------------------------------------
-    // PUT /api/posts/<slug> - 更新文章 (需要 token 验证)
-    // 请求头: X-Auth-Token: flyfish
-    // 请求体: { "title", "summary", "content", "tags" }
+    // /api/posts/<slug> - GET (detail) + PUT (update) + DELETE
+    // MUST be in one CROW_ROUTE to avoid Crow overwrite issue
     // -----------------------------------------
-    CROW_ROUTE(app, "/api/posts/<string>").methods("PUT"_method)
+    CROW_ROUTE(app, "/api/posts/<string>").methods("GET"_method, "PUT"_method, "DELETE"_method)
     ([db](const crow::request& req, const std::string& slug) {
-        try
+
+        // ===== GET /api/posts/<slug> =====
+        if (req.method == crow::HTTPMethod::GET)
         {
-            // Verify auth token
-            auto token = req.get_header_value("X-Auth-Token");
-            if (token != "flyfish")
+            try
             {
-                json err;
-                err["error"] = "未授权访问";
-                auto res = crow::response(401, err.dump());
+                auto post = db->get_post_by_slug(slug);
+
+                if (!post.has_value())
+                {
+                    return error_response(404, "文章不存在");
+                }
+
+                auto res = crow::response(200, post_to_json(post.value(), true).dump());
                 res.set_header("Content-Type", "application/json");
                 return res;
             }
-
-            // Parse request body
-            auto body = json::parse(req.body);
-
-            std::string title   = body.value("title", "");
-            std::string summary = body.value("summary", "");
-            std::string content = body.value("content", "");
-            std::string tags    = body.value("tags", "");
-
-            if (title.empty() || content.empty())
+            catch (const std::exception& e)
             {
-                json err;
-                err["error"] = "标题和正文为必填项";
-                auto res = crow::response(400, err.dump());
+                LOG_ERROR("获取文章详情接口异常: {}", e.what());
+                return error_response(500, "获取文章详情失败", e.what());
+            }
+        }
+
+        // ===== PUT /api/posts/<slug> =====
+        if (req.method == crow::HTTPMethod::PUT)
+        {
+            try
+            {
+                if (!verify_token(req))
+                {
+                    return error_response(401, "未授权访问");
+                }
+
+                auto body = json::parse(req.body);
+
+                std::string title   = body.value("title", "");
+                std::string summary = body.value("summary", "");
+                std::string content = body.value("content", "");
+                std::string tags    = body.value("tags", "");
+
+                if (title.empty() || content.empty())
+                {
+                    return error_response(400, "标题和正文为必填项");
+                }
+
+                auto post = db->update_post(slug, title, summary, content, tags);
+
+                auto res = crow::response(200, post_to_json(post, true).dump());
                 res.set_header("Content-Type", "application/json");
                 return res;
             }
-
-            auto post = db->update_post(slug, title, summary, content, tags);
-
-            auto res = crow::response(200, post_to_json(post, true).dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
+            catch (const json::parse_error& e)
+            {
+                LOG_ERROR("更新文章请求体解析失败: {}", e.what());
+                return error_response(400, "请求体格式错误", e.what());
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR("更新文章接口异常: {}", e.what());
+                return error_response(500, "更新文章失败", e.what());
+            }
         }
-        catch (const json::parse_error& e)
-        {
-            LOG_ERROR("更新文章请求体解析失败: {}", e.what());
-            json err;
-            err["error"]  = "请求体格式错误";
-            err["detail"] = e.what();
-            auto res = crow::response(400, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-        catch (const std::exception& e)
-        {
-            LOG_ERROR("更新文章接口异常: {}", e.what());
-            json err;
-            err["error"]  = "更新文章失败";
-            err["detail"] = e.what();
-            auto res = crow::response(500, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
-        }
-    });
 
-    // -----------------------------------------
-    // DELETE /api/posts/<slug> - 删除文章 (需要 token 验证)
-    // 请求头: X-Auth-Token: flyfish
-    // -----------------------------------------
-    CROW_ROUTE(app, "/api/posts/<string>").methods("DELETE"_method)
-    ([db](const crow::request& req, const std::string& slug) {
+        // ===== DELETE /api/posts/<slug> =====
         try
         {
-            // Verify auth token
-            auto token = req.get_header_value("X-Auth-Token");
-            if (token != "flyfish")
+            if (!verify_token(req))
             {
-                json err;
-                err["error"] = "未授权访问";
-                auto res = crow::response(401, err.dump());
-                res.set_header("Content-Type", "application/json");
-                return res;
+                return error_response(401, "未授权访问");
             }
 
             bool deleted = db->delete_post(slug);
 
             if (!deleted)
             {
-                json err;
-                err["error"] = "文章不存在";
-                auto res = crow::response(404, err.dump());
-                res.set_header("Content-Type", "application/json");
-                return res;
+                return error_response(404, "文章不存在");
             }
 
             json response;
@@ -285,14 +238,11 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
         catch (const std::exception& e)
         {
             LOG_ERROR("删除文章接口异常: {}", e.what());
-            json err;
-            err["error"]  = "删除文章失败";
-            err["detail"] = e.what();
-            auto res = crow::response(500, err.dump());
-            res.set_header("Content-Type", "application/json");
-            return res;
+            return error_response(500, "删除文章失败", e.what());
         }
     });
+
+    LOG_INFO("文章路由注册完成");
 }
 
 } // namespace blog
