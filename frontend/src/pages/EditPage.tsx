@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
-import { fetchPost, updatePost } from '../api'
+import { fetchPost, updatePost, deletePost } from '../api'
 
 const AUTH_TOKEN_KEY = 'blog_admin_token'
 
@@ -18,6 +18,8 @@ function EditPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!slug) return
@@ -41,7 +43,7 @@ function EditPage() {
       return
     }
 
-    const token = localStorage.getItem(AUTH_TOKEN_KEY)
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY)
     if (!token || !slug) {
       setError('未授权，请通过 token 参数访问')
       return
@@ -61,6 +63,26 @@ function EditPage() {
       setError(e.message || '更新失败')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY)
+    if (!token || !slug) {
+      setError('未授权，请通过 token 参数访问')
+      return
+    }
+
+    setDeleting(true)
+    setError(null)
+
+    try {
+      await deletePost(slug, token)
+      navigate('/')
+    } catch (e: any) {
+      setError(e.message || '删除失败')
+      setDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -218,6 +240,37 @@ function EditPage() {
           >
             取消
           </button>
+
+          <div className="flex-1" />
+
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#c44' }}
+            >
+              删除文章
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: '#c44' }}>确认删除？</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#c44', color: '#fff' }}
+              >
+                {deleting ? '删除中...' : '确认'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-3 py-2 rounded-lg text-sm transition-colors"
+                style={{ color: 'var(--text-dim)' }}
+              >
+                取消
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

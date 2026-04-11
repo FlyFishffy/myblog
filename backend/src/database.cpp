@@ -284,4 +284,33 @@ namespace blog
         }
     }
 
+    bool Database::delete_post(const std::string& slug)
+    {
+        try
+        {
+            auto guard = pool_.get_connection();
+            pqxx::work txn(guard.get());
+
+            pqxx::result rows = txn.exec_params(
+                "DELETE FROM posts WHERE slug = $1 RETURNING id",
+                slug
+            );
+            txn.commit();
+
+            if (rows.empty())
+            {
+                LOG_WARN("delete article failed, not found: {}", slug);
+                return false;
+            }
+
+            LOG_INFO("delete article successfully: {}", slug);
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("delete article failed: {}", e.what());
+            throw;
+        }
+    }
+
 } // namespace blog

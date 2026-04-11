@@ -78,6 +78,7 @@ public:
     Post update_post(const std::string& slug, const std::string& title,
                      const std::string& summary, const std::string& content,
                      const std::string& tags);
+    bool delete_post(const std::string& slug);
 
 private:
     ConnectionPool pool_;

@@ -67,3 +67,16 @@ export async function updatePost(slug: string, data: CreatePostData, token: stri
   }
   return res.json();
 }
+
+export async function deletePost(slug: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/posts/${slug}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Auth-Token': token,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(err.error || 'Failed to delete post');
+  }
+}

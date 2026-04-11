@@ -16,12 +16,12 @@ function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    // Check URL token parameter
+    // Check URL token parameter - only valid in current session
     const token = searchParams.get('token')
     if (token === 'flyfish') {
-      localStorage.setItem(AUTH_TOKEN_KEY, token)
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token)
       setIsAdmin(true)
-    } else if (localStorage.getItem(AUTH_TOKEN_KEY) === 'flyfish') {
+    } else if (sessionStorage.getItem(AUTH_TOKEN_KEY) === 'flyfish') {
       setIsAdmin(true)
     }
   }, [searchParams])

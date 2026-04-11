@@ -244,6 +244,55 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
             return res;
         }
     });
+
+    // -----------------------------------------
+    // DELETE /api/posts/<slug> - 删除文章 (需要 token 验证)
+    // 请求头: X-Auth-Token: flyfish
+    // -----------------------------------------
+    CROW_ROUTE(app, "/api/posts/<string>").methods("DELETE"_method)
+    ([db](const crow::request& req, const std::string& slug) {
+        try
+        {
+            // Verify auth token
+            auto token = req.get_header_value("X-Auth-Token");
+            if (token != "flyfish")
+            {
+                json err;
+                err["error"] = "未授权访问";
+                auto res = crow::response(401, err.dump());
+                res.set_header("Content-Type", "application/json");
+                return res;
+            }
+
+            bool deleted = db->delete_post(slug);
+
+            if (!deleted)
+            {
+                json err;
+                err["error"] = "文章不存在";
+                auto res = crow::response(404, err.dump());
+                res.set_header("Content-Type", "application/json");
+                return res;
+            }
+
+            json response;
+            response["message"] = "文章已删除";
+            response["slug"] = slug;
+            auto res = crow::response(200, response.dump());
+            res.set_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("删除文章接口异常: {}", e.what());
+            json err;
+            err["error"]  = "删除文章失败";
+            err["detail"] = e.what();
+            auto res = crow::response(500, err.dump());
+            res.set_header("Content-Type", "application/json");
+            return res;
+        }
+    });
 }
 
 } // namespace blog

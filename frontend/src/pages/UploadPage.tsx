@@ -25,7 +25,7 @@ function UploadPage() {
       return
     }
 
-    const token = localStorage.getItem(AUTH_TOKEN_KEY)
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY)
     if (!token) {
       setError('未授权，请通过 token 参数访问')
       return

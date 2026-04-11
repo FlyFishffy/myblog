@@ -13,17 +13,14 @@ function Header({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <header className="sticky top-0 z-50" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-primary)' }}>
       <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-        <span
-          className="group shrink-0 cursor-pointer"
-          onClick={() => window.location.href = '/'}
-        >
+        <Link to="/" className="shrink-0">
           <span className="text-xl font-bold transition-colors tracking-wide" style={{ color: 'var(--text-title)' }}>
             FlyF1sh's Blog
           </span>
-        </span>
+        </Link>
 
-        <div className="flex items-center gap-6">
-          <nav className="flex items-center gap-2">
+        <div className="flex items-center gap-4 shrink-0">
+          <nav className="flex items-center gap-1">
             <Link
               to="/"
               className="text-sm transition-colors py-1 px-2 rounded"
