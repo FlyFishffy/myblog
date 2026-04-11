@@ -11,13 +11,16 @@ function Header({ isAdmin }: { isAdmin?: boolean }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-primary) 90%, transparent)', borderBottom: '1px solid var(--border-primary)' }}>
+    <header className="sticky top-0 z-50" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-primary)' }}>
       <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-        <Link to="/" className="group">
+        <span
+          className="group shrink-0 cursor-pointer"
+          onClick={() => window.location.href = '/'}
+        >
           <span className="text-xl font-bold transition-colors tracking-wide" style={{ color: 'var(--text-title)' }}>
             FlyF1sh's Blog
           </span>
-        </Link>
+        </span>
 
         <div className="flex items-center gap-6">
           <nav className="flex items-center gap-2">
