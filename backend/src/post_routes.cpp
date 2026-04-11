@@ -13,11 +13,51 @@
 #include "routes/post_routes.h"
 #include "logger.h"
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include <iomanip>
 
 using json = nlohmann::json;
 
 namespace blog
 {
+
+/**
+ * @brief URL decode: convert %XX sequences back to original characters
+ * e.g. "cpp%20start" -> "cpp start"
+ */
+static std::string url_decode(const std::string& encoded)
+{
+    std::string decoded;
+    decoded.reserve(encoded.size());
+
+    for (std::size_t i = 0; i < encoded.size(); ++i)
+    {
+        if (encoded[i] == '%' && i + 2 < encoded.size())
+        {
+            std::string hex = encoded.substr(i + 1, 2);
+            try
+            {
+                unsigned long ch = std::stoul(hex, nullptr, 16);
+                decoded += static_cast<char>(ch);
+                i += 2;
+            }
+            catch (...)
+            {
+                decoded += encoded[i];
+            }
+        }
+        else if (encoded[i] == '+')
+        {
+            decoded += ' ';
+        }
+        else
+        {
+            decoded += encoded[i];
+        }
+    }
+
+    return decoded;
+}
 
 /**
  * @brief 将 Post 结构体转换为 JSON 对象
@@ -148,7 +188,10 @@ void register_post_routes(crow::SimpleApp& app, std::shared_ptr<Database> db)
     // MUST be in one CROW_ROUTE to avoid Crow overwrite issue
     // -----------------------------------------
     CROW_ROUTE(app, "/api/posts/<string>").methods("GET"_method, "PUT"_method, "DELETE"_method)
-    ([db](const crow::request& req, const std::string& slug) {
+    ([db](const crow::request& req, const std::string& raw_slug) {
+
+        // Decode URL-encoded slug (e.g. "cpp%20start" -> "cpp start")
+        const std::string slug = url_decode(raw_slug);
 
         // ===== GET /api/posts/<slug> =====
         if (req.method == crow::HTTPMethod::GET)
