@@ -11,7 +11,6 @@ function PostCard({ post, isAdmin }: PostCardProps) {
   const createdDate = new Date(post.created_at).toLocaleDateString('zh-CN', dateOptions)
   const updatedDate = new Date(post.updated_at).toLocaleDateString('zh-CN', dateOptions)
 
-  const content
   const content = post.content || post.summary || ''
   const wordCount = content.length
   const readingTime = Math.max(1, Math.ceil(wordCount / 400))

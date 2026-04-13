@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3639,
+    allowedHosts: ['flyf1sh.icu'],
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8889',
