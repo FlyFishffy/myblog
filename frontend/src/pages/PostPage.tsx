@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeCustomListIndent from '../utils/remarkCustomLists'
 import { fetchPost } from '../api'
 import type { Post } from '../api'
 import { countMarkdownWords } from '../utils/wordCount'
@@ -376,7 +378,7 @@ function PostPage({ isAdmin }: { isAdmin?: boolean }) {
       <hr style={{ borderColor: 'var(--border-primary)' }} className="mb-8" />
 
       <div className="prose">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeHighlight, rehypeCustomListIndent]}>
           {content}
         </ReactMarkdown>
       </div>

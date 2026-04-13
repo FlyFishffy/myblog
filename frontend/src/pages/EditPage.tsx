@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeCustomListIndent from '../utils/remarkCustomLists'
 import { fetchPost, updatePost, deletePost } from '../api'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -327,7 +329,7 @@ function EditPage() {
               style={{ ...inputStyle, minHeight: '400px' }}
             >
               {content ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeHighlight, rehypeCustomListIndent]}>{content}</ReactMarkdown>
               ) : (
                 <p className="text-sm" style={{ color: 'var(--text-faint)' }}>暂无内容可预览</p>
               )}
