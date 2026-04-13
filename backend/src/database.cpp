@@ -30,18 +30,21 @@ static int count_utf8_chars(const std::string& str)
 /**
  * @brief Strip Markdown syntax and count only visible text characters.
  *
- * Removes: headings (#), bold/italic (** _ ~~), links/images, code blocks,
- * inline code, HTML tags, blockquotes (>), horizontal rules, list markers, etc.
+ * Removes Markdown syntax markers but keeps all visible rendered text,
+ * including code block content and inline code content.
+ * Removes: headings (#), bold/italic (** _ ~~), link/image syntax, fence markers,
+ * backticks, HTML tags, blockquotes (>), horizontal rules, list markers, etc.
  */
 static int count_markdown_words(const std::string& content)
 {
     std::string text = content;
 
-    // Remove fenced code blocks (``` ... ```)
-    text = std::regex_replace(text, std::regex("```[\\s\\S]*?```"), "");
+    // Remove fenced code block fence lines (```lang and ```), keep code content inside
+    text = std::regex_replace(text, std::regex("```[^\n]*\n"), "\n");
+    text = std::regex_replace(text, std::regex("```"), "");
 
-    // Remove inline code (`...`)
-    text = std::regex_replace(text, std::regex("`[^`]*`"), "");
+    // Remove inline code backticks, keep content inside
+    text = std::regex_replace(text, std::regex("`([^`]*)`"), "$1");
 
     // Remove images ![alt](url)
     text = std::regex_replace(text, std::regex("!\\[[^\\]]*\\]\\([^)]*\\)"), "");

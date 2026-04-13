@@ -1,15 +1,17 @@
 /**
- * Strip Markdown syntax and count only visible text characters.
+ * Strip Markdown syntax markers and count only visible rendered text characters.
+ * Keeps code block content and inline code content (they are visible after rendering).
  * This mirrors the backend's count_markdown_words logic.
  */
 export function countMarkdownWords(content: string): number {
   let text = content
 
-  // Remove fenced code blocks (``` ... ```)
-  text = text.replace(/```[\s\S]*?```/g, '')
+  // Remove fenced code block fence lines (```lang and ```), keep code content inside
+  text = text.replace(/```[^\n]*\n/g, '\n')
+  text = text.replace(/```/g, '')
 
-  // Remove inline code (`...`)
-  text = text.replace(/`[^`]*`/g, '')
+  // Remove inline code backticks, keep content inside
+  text = text.replace(/`([^`]*)`/g, '$1')
 
   // Remove images ![alt](url)
   text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, '')
