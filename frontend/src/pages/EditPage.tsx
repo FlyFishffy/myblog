@@ -1,15 +1,25 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { fetchPost, updatePost, deletePost } from '../api'
+import ConfirmModal from '../components/ConfirmModal'
 
 const AUTH_TOKEN_KEY = 'blog_admin_token'
+const EDIT_DRAFT_KEY_PREFIX = 'blog_edit_draft_'
+
+interface DraftData {
+  title: string
+  summary: string
+  tags: string
+  content: string
+}
 
 function EditPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [tags, setTags] = useState('')
@@ -21,14 +31,68 @@ function EditPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Draft save modal state
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const pendingNavPath = useRef<string | null>(null)
+  const skipPrompt = useRef(false)
+  // Store original data from server to detect changes
+  const originalData = useRef<DraftData | null>(null)
+
+  const draftKey = `${EDIT_DRAFT_KEY_PREFIX}${slug}`
+
+  // Check if form has been modified from original
+  const hasChanges = useCallback(() => {
+    if (!originalData.current) return false
+    const orig = originalData.current
+    return (
+      title !== orig.title ||
+      summary !== orig.summary ||
+      tags !== orig.tags ||
+      content !== orig.content
+    )
+  }, [title, summary, tags, content])
+
+  // Save draft to sessionStorage
+  const saveDraft = useCallback(() => {
+    const draft: DraftData = { title, summary, tags, content }
+    sessionStorage.setItem(draftKey, JSON.stringify(draft))
+  }, [title, summary, tags, content, draftKey])
+
   useEffect(() => {
     if (!slug) return
     fetchPost(slug)
       .then(post => {
-        setTitle(post.title)
-        setSummary(post.summary || '')
-        setTags(post.tags || '')
-        setContent(post.content || '')
+        const serverData: DraftData = {
+          title: post.title,
+          summary: post.summary || '',
+          tags: post.tags || '',
+          content: post.content || '',
+        }
+        originalData.current = serverData
+
+        // Check if there's a saved draft for this article
+        const saved = sessionStorage.getItem(`${EDIT_DRAFT_KEY_PREFIX}${slug}`)
+        if (saved) {
+          try {
+            const draft: DraftData = JSON.parse(saved)
+            setTitle(draft.title || '')
+            setSummary(draft.summary || '')
+            setTags(draft.tags || '')
+            setContent(draft.content || '')
+            sessionStorage.removeItem(`${EDIT_DRAFT_KEY_PREFIX}${slug}`)
+          } catch {
+            setTitle(serverData.title)
+            setSummary(serverData.summary)
+            setTags(serverData.tags)
+            setContent(serverData.content)
+            sessionStorage.removeItem(`${EDIT_DRAFT_KEY_PREFIX}${slug}`)
+          }
+        } else {
+          setTitle(serverData.title)
+          setSummary(serverData.summary)
+          setTags(serverData.tags)
+          setContent(serverData.content)
+        }
         setLoading(false)
       })
       .catch(() => {
@@ -36,6 +100,61 @@ function EditPage() {
         setLoading(false)
       })
   }, [slug])
+
+  // Intercept navigation via Header links
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a')
+      if (!anchor) return
+
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('http')) return
+
+      // Only intercept if navigating away from edit page and form has changes
+      if (location.pathname.startsWith('/edit/') && !location.pathname.startsWith(href) && hasChanges() && !skipPrompt.current) {
+        e.preventDefault()
+        e.stopPropagation()
+        pendingNavPath.current = href
+        setShowLeaveModal(true)
+      }
+    }
+
+    document.addEventListener('click', handleClick, true)
+    return () => document.removeEventListener('click', handleClick, true)
+  }, [location.pathname, hasChanges])
+
+  // Handle browser back/refresh with beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges() && !skipPrompt.current) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasChanges])
+
+  // Modal: save draft and navigate
+  const handleSaveDraft = () => {
+    saveDraft()
+    setShowLeaveModal(false)
+    skipPrompt.current = true
+    if (pendingNavPath.current) {
+      navigate(pendingNavPath.current)
+      pendingNavPath.current = null
+    }
+  }
+
+  // Modal: discard and navigate
+  const handleDiscardDraft = () => {
+    sessionStorage.removeItem(draftKey)
+    setShowLeaveModal(false)
+    skipPrompt.current = true
+    if (pendingNavPath.current) {
+      navigate(pendingNavPath.current)
+      pendingNavPath.current = null
+    }
+  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
@@ -58,6 +177,9 @@ function EditPage() {
         { title: title.trim(), slug, summary: summary.trim(), tags: tags.trim(), content },
         token
       )
+      // Clear draft on successful submit
+      sessionStorage.removeItem(draftKey)
+      skipPrompt.current = true
       navigate(`/post/${slug}`)
     } catch (e: any) {
       setError(e.message || '更新失败')
@@ -234,7 +356,14 @@ function EditPage() {
             {submitting ? '保存中...' : '保存修改'}
           </button>
           <button
-            onClick={() => navigate(`/post/${slug}`)}
+            onClick={() => {
+              if (hasChanges()) {
+                pendingNavPath.current = `/post/${slug}`
+                setShowLeaveModal(true)
+              } else {
+                navigate(`/post/${slug}`)
+              }
+            }}
             className="px-4 py-2.5 rounded-lg text-sm transition-colors"
             style={{ color: 'var(--text-dim)' }}
           >
@@ -273,6 +402,17 @@ function EditPage() {
           )}
         </div>
       </div>
+
+      {/* Leave confirmation modal */}
+      <ConfirmModal
+        open={showLeaveModal}
+        title="保存草稿"
+        message="当前文章有未保存的修改，是否保存为草稿？保存后下次进入编辑页面时可以继续编辑。"
+        confirmText="保存草稿"
+        cancelText="不保存"
+        onConfirm={handleSaveDraft}
+        onCancel={handleDiscardDraft}
+      />
     </div>
   )
 }

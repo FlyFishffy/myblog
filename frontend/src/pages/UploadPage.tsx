@@ -1,14 +1,25 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { createPost } from '../api'
+import ConfirmModal from '../components/ConfirmModal'
 
 const AUTH_TOKEN_KEY = 'blog_admin_token'
+const DRAFT_KEY = 'blog_upload_draft'
+
+interface DraftData {
+  title: string
+  slug: string
+  summary: string
+  tags: string
+  content: string
+}
 
 function UploadPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [summary, setSummary] = useState('')
@@ -17,6 +28,97 @@ function UploadPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit')
+
+  // Draft save modal state
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const pendingNavPath = useRef<string | null>(null)
+  const skipPrompt = useRef(false)
+
+  // Check if form has content
+  const hasContent = useCallback(() => {
+    return !!(title.trim() || slug.trim() || summary.trim() || tags.trim() || content.trim())
+  }, [title, slug, summary, tags, content])
+
+  // Load draft from sessionStorage on mount
+  useEffect(() => {
+    const saved = sessionStorage.getItem(DRAFT_KEY)
+    if (saved) {
+      try {
+        const draft: DraftData = JSON.parse(saved)
+        setTitle(draft.title || '')
+        setSlug(draft.slug || '')
+        setSummary(draft.summary || '')
+        setTags(draft.tags || '')
+        setContent(draft.content || '')
+        // Clear draft after restoring
+        sessionStorage.removeItem(DRAFT_KEY)
+      } catch {
+        sessionStorage.removeItem(DRAFT_KEY)
+      }
+    }
+  }, [])
+
+  // Save draft to sessionStorage
+  const saveDraft = useCallback(() => {
+    const draft: DraftData = { title, slug, summary, tags, content }
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  }, [title, slug, summary, tags, content])
+
+  // Intercept navigation via Header links
+  useEffect(() => {
+    // Override click events on internal links to intercept navigation
+    const handleClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a')
+      if (!anchor) return
+
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('http')) return
+
+      // Only intercept if navigating away from /upload and form has content
+      if (location.pathname === '/upload' && href !== '/upload' && hasContent() && !skipPrompt.current) {
+        e.preventDefault()
+        e.stopPropagation()
+        pendingNavPath.current = href
+        setShowLeaveModal(true)
+      }
+    }
+
+    document.addEventListener('click', handleClick, true)
+    return () => document.removeEventListener('click', handleClick, true)
+  }, [location.pathname, hasContent])
+
+  // Handle browser back/refresh with beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasContent() && !skipPrompt.current) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasContent])
+
+  // Modal: save draft and navigate
+  const handleSaveDraft = () => {
+    saveDraft()
+    setShowLeaveModal(false)
+    skipPrompt.current = true
+    if (pendingNavPath.current) {
+      navigate(pendingNavPath.current)
+      pendingNavPath.current = null
+    }
+  }
+
+  // Modal: discard and navigate
+  const handleDiscardDraft = () => {
+    sessionStorage.removeItem(DRAFT_KEY)
+    setShowLeaveModal(false)
+    skipPrompt.current = true
+    if (pendingNavPath.current) {
+      navigate(pendingNavPath.current)
+      pendingNavPath.current = null
+    }
+  }
 
   const handleSubmit = async () => {
     // Validate required fields
@@ -39,6 +141,9 @@ function UploadPage() {
         { title: title.trim(), slug: slug.trim(), summary: summary.trim(), tags: tags.trim(), content },
         token
       )
+      // Clear draft on successful submit
+      sessionStorage.removeItem(DRAFT_KEY)
+      skipPrompt.current = true
       navigate(`/post/${post.slug}`)
     } catch (e: any) {
       setError(e.message || '提交失败')
@@ -192,7 +297,14 @@ function UploadPage() {
             {submitting ? '提交中...' : '提交文章'}
           </button>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              if (hasContent()) {
+                pendingNavPath.current = '/'
+                setShowLeaveModal(true)
+              } else {
+                navigate('/')
+              }
+            }}
             className="px-4 py-2.5 rounded-lg text-sm transition-colors"
             style={{ color: 'var(--text-dim)' }}
           >
@@ -200,6 +312,17 @@ function UploadPage() {
           </button>
         </div>
       </div>
+
+      {/* Leave confirmation modal */}
+      <ConfirmModal
+        open={showLeaveModal}
+        title="保存草稿"
+        message="当前页面有未提交的文章内容，是否保存为草稿？保存后下次进入上传页面时可以继续编辑。"
+        confirmText="保存草稿"
+        cancelText="不保存"
+        onConfirm={handleSaveDraft}
+        onCancel={handleDiscardDraft}
+      />
     </div>
   )
 }

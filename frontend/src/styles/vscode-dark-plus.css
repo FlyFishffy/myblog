@@ -1,0 +1,402 @@
+/*
+ * VS Code Dark+ inspired theme for highlight.js
+ * Based on the default Dark+ color theme in Visual Studio Code
+ */
+
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+code.hljs {
+  padding: 3px 5px;
+}
+
+.hljs {
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+/* Keywords: if, else, for, while, return, import, from, class, def, etc. */
+.hljs-keyword {
+  color: #c586c0;
+}
+
+/* Control flow keywords get a distinct purple */
+.hljs-meta .hljs-keyword {
+  color: #c586c0;
+}
+
+/* Built-in types and functions: int, str, list, print, len, range, etc. */
+.hljs-built_in {
+  color: #4ec9b0;
+}
+
+/* Type names */
+.hljs-type {
+  color: #4ec9b0;
+}
+
+/* Literals: true, false, null, None, etc. */
+.hljs-literal {
+  color: #569cd6;
+}
+
+/* Numbers */
+.hljs-number {
+  color: #b5cea8;
+}
+
+/* Strings */
+.hljs-string {
+  color: #ce9178;
+}
+
+/* Regex */
+.hljs-regexp {
+  color: #d16969;
+}
+
+/* String inside meta (e.g. shebang path) */
+.hljs-meta .hljs-string {
+  color: #ce9178;
+}
+
+/* Subst (template literal expressions) */
+.hljs-subst {
+  color: #d4d4d4;
+}
+
+/* Symbols and names (general identifiers) */
+.hljs-symbol {
+  color: #569cd6;
+}
+
+.hljs-name {
+  color: #569cd6;
+}
+
+/* Class names */
+.hljs-class {
+  color: #4ec9b0;
+}
+
+/* Function definitions and calls */
+.hljs-title {
+  color: #dcdcaa;
+}
+
+.hljs-title.class_ {
+  color: #4ec9b0;
+}
+
+.hljs-title.function_ {
+  color: #dcdcaa;
+}
+
+/* Function parameters */
+.hljs-params {
+  color: #9cdcfe;
+}
+
+/* Variables */
+.hljs-variable {
+  color: #9cdcfe;
+}
+
+.hljs-variable.language_ {
+  color: #569cd6;
+}
+
+/* Template variables */
+.hljs-template-variable {
+  color: #9cdcfe;
+}
+
+/* Properties / attributes */
+.hljs-attr {
+  color: #9cdcfe;
+}
+
+.hljs-attribute {
+  color: #9cdcfe;
+}
+
+/* Comments */
+.hljs-comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* Docstrings / block quotes in comments */
+.hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* Doc tags (@param, @return, etc.) */
+.hljs-doctag {
+  color: #608b4e;
+}
+
+/* Meta / preprocessor directives */
+.hljs-meta {
+  color: #c586c0;
+}
+
+/* Tags (HTML/XML) */
+.hljs-tag {
+  color: #808080;
+}
+
+/* Tag name */
+.hljs-tag .hljs-name {
+  color: #569cd6;
+}
+
+/* Tag attribute */
+.hljs-tag .hljs-attr {
+  color: #9cdcfe;
+}
+
+/* Template tags */
+.hljs-template-tag {
+  color: #c586c0;
+}
+
+/* Links */
+.hljs-link {
+  color: #569cd6;
+  text-decoration: underline;
+}
+
+/* Sections (markdown headers, etc.) */
+.hljs-section {
+  color: #569cd6;
+}
+
+/* Emphasis */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* Strong */
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* Bullet points */
+.hljs-bullet {
+  color: #d7ba7d;
+}
+
+/* CSS selectors */
+.hljs-selector-tag {
+  color: #d7ba7d;
+}
+
+.hljs-selector-id {
+  color: #d7ba7d;
+}
+
+.hljs-selector-class {
+  color: #d7ba7d;
+}
+
+.hljs-selector-attr {
+  color: #d7ba7d;
+}
+
+.hljs-selector-pseudo {
+  color: #d7ba7d;
+}
+
+/* Diff additions and deletions */
+.hljs-addition {
+  background-color: rgba(155, 185, 85, 0.2);
+  color: #b5cea8;
+  display: inline-block;
+  width: 100%;
+}
+
+.hljs-deletion {
+  background-color: rgba(255, 0, 0, 0.15);
+  color: #ce9178;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Operator (=, +, -, etc.) - not a standard hljs class but used by some grammars */
+.hljs-operator {
+  color: #d4d4d4;
+}
+
+/* Punctuation */
+.hljs-punctuation {
+  color: #d4d4d4;
+}
+
+/* Property */
+.hljs-property {
+  color: #9cdcfe;
+}
+
+/* ===== Shell / Bash specific enhancements ===== */
+
+/* Shell built-in commands (echo, cd, export, etc.) are matched as .hljs-built_in */
+/* Shell variables like $HOME, $PATH are matched as .hljs-variable */
+/* These are already covered by the rules above */
+
+/* ===== Light theme overrides ===== */
+.light .hljs {
+  background: #f3f3f3;
+  color: #1e1e1e;
+}
+
+.light .hljs-keyword {
+  color: #af00db;
+}
+
+.light .hljs-meta .hljs-keyword {
+  color: #af00db;
+}
+
+.light .hljs-built_in {
+  color: #267f99;
+}
+
+.light .hljs-type {
+  color: #267f99;
+}
+
+.light .hljs-literal {
+  color: #0000ff;
+}
+
+.light .hljs-number {
+  color: #098658;
+}
+
+.light .hljs-string {
+  color: #a31515;
+}
+
+.light .hljs-regexp {
+  color: #811f3f;
+}
+
+.light .hljs-meta .hljs-string {
+  color: #a31515;
+}
+
+.light .hljs-symbol,
+.light .hljs-name {
+  color: #0000ff;
+}
+
+.light .hljs-class {
+  color: #267f99;
+}
+
+.light .hljs-title {
+  color: #795e26;
+}
+
+.light .hljs-title.class_ {
+  color: #267f99;
+}
+
+.light .hljs-title.function_ {
+  color: #795e26;
+}
+
+.light .hljs-params {
+  color: #001080;
+}
+
+.light .hljs-variable {
+  color: #001080;
+}
+
+.light .hljs-variable.language_ {
+  color: #0000ff;
+}
+
+.light .hljs-template-variable {
+  color: #001080;
+}
+
+.light .hljs-attr,
+.light .hljs-attribute {
+  color: #001080;
+}
+
+.light .hljs-comment,
+.light .hljs-quote {
+  color: #008000;
+  font-style: italic;
+}
+
+.light .hljs-doctag {
+  color: #008000;
+}
+
+.light .hljs-meta {
+  color: #af00db;
+}
+
+.light .hljs-tag {
+  color: #800000;
+}
+
+.light .hljs-tag .hljs-name {
+  color: #800000;
+}
+
+.light .hljs-tag .hljs-attr {
+  color: #e50000;
+}
+
+.light .hljs-template-tag {
+  color: #af00db;
+}
+
+.light .hljs-section {
+  color: #0000ff;
+}
+
+.light .hljs-bullet,
+.light .hljs-selector-tag,
+.light .hljs-selector-id,
+.light .hljs-selector-class,
+.light .hljs-selector-attr,
+.light .hljs-selector-pseudo {
+  color: #800000;
+}
+
+.light .hljs-addition {
+  background-color: rgba(155, 185, 85, 0.2);
+  color: #098658;
+}
+
+.light .hljs-deletion {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #a31515;
+}
+
+.light .hljs-property {
+  color: #001080;
+}
+
+.light .hljs-subst {
+  color: #1e1e1e;
+}
+
+.light .hljs-operator {
+  color: #1e1e1e;
+}
+
+.light .hljs-punctuation {
+  color: #1e1e1e;
+}
