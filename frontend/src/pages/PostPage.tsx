@@ -295,11 +295,10 @@ function PostPage({ isAdmin }: { isAdmin?: boolean }) {
   }
 
   const tags = post.tags ? post.tags.split(',').map(t => t.trim()).filter(Boolean) : []
-  const date = new Date(post.created_at).toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+  const createdDate = new Date(post.created_at).toLocaleDateString('zh-CN', dateOptions)
+  const updatedDate = new Date(post.updated_at).toLocaleDateString('zh-CN', dateOptions)
+  const isModified = createdDate !== updatedDate
   const content = post.content || ''
   const wordCount = content.length
   const readingTime = Math.max(1, Math.ceil(wordCount / 400))
@@ -334,7 +333,13 @@ function PostPage({ isAdmin }: { isAdmin?: boolean }) {
           {post.title}
         </h1>
         <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--text-faint)' }}>
-          <time>{date}</time>
+          <time>创建于 {createdDate}</time>
+          {isModified && (
+            <>
+              <span style={{ color: 'var(--text-separator)' }}>·</span>
+              <time>修改于 {updatedDate}</time>
+            </>
+          )}
           <span style={{ color: 'var(--text-separator)' }}>·</span>
           <span>{readingTime} 分钟</span>
           <span style={{ color: 'var(--text-separator)' }}>·</span>

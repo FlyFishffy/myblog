@@ -122,6 +122,31 @@
   @apply font-semibold;
 }
 
+.prose table {
+  @apply w-full mb-4 border-collapse text-sm;
+  border: 1px solid var(--border-primary);
+}
+
+.prose thead {
+  background-color: var(--bg-tertiary);
+}
+
+.prose th {
+  color: var(--text-title);
+  @apply text-left px-4 py-2 font-semibold;
+  border: 1px solid var(--border-primary);
+}
+
+.prose td {
+  color: var(--text-muted);
+  @apply text-left px-4 py-2;
+  border: 1px solid var(--border-primary);
+}
+
+.prose tbody tr:hover {
+  background-color: var(--bg-hover);
+}
+
 .prose hr {
   border-color: var(--border-primary);
   @apply my-8;
