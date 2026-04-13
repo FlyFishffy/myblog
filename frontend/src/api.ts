@@ -7,6 +7,7 @@ export interface Post {
   summary: string;
   content?: string;
   tags: string;
+  word_count?: number;
   created_at: string;
   updated_at: string;
 }

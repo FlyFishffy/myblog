@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { fetchPost } from '../api'
 import type { Post } from '../api'
+import { countMarkdownWords } from '../utils/wordCount'
 
 // Mock post content for when backend is not running
 const MOCK_POSTS: Record<string, Post> = {
@@ -299,7 +300,7 @@ function PostPage({ isAdmin }: { isAdmin?: boolean }) {
   const createdDate = new Date(post.created_at).toLocaleDateString('zh-CN', dateOptions)
   const updatedDate = new Date(post.updated_at).toLocaleDateString('zh-CN', dateOptions)
   const content = post.content || ''
-  const wordCount = content.length
+  const wordCount = post.word_count || countMarkdownWords(content)
   const readingTime = Math.max(1, Math.ceil(wordCount / 400))
 
   return (

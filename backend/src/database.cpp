@@ -3,10 +3,103 @@
 
 #include <string>
 #include <vector>
+#include <regex>
 
 
 namespace blog
 {
+
+/**
+ * @brief Count UTF-8 characters (not bytes) in a string
+ */
+static int count_utf8_chars(const std::string& str)
+{
+    int count = 0;
+    for (size_t i = 0; i < str.size(); )
+    {
+        unsigned char c = static_cast<unsigned char>(str[i]);
+        if (c < 0x80)        i += 1;
+        else if (c < 0xE0)   i += 2;
+        else if (c < 0xF0)   i += 3;
+        else                 i += 4;
+        ++count;
+    }
+    return count;
+}
+
+/**
+ * @brief Strip Markdown syntax and count only visible text characters.
+ *
+ * Removes: headings (#), bold/italic (** _ ~~), links/images, code blocks,
+ * inline code, HTML tags, blockquotes (>), horizontal rules, list markers, etc.
+ */
+static int count_markdown_words(const std::string& content)
+{
+    std::string text = content;
+
+    // Remove fenced code blocks (``` ... ```)
+    text = std::regex_replace(text, std::regex("```[\\s\\S]*?```"), "");
+
+    // Remove inline code (`...`)
+    text = std::regex_replace(text, std::regex("`[^`]*`"), "");
+
+    // Remove images ![alt](url)
+    text = std::regex_replace(text, std::regex("!\\[[^\\]]*\\]\\([^)]*\\)"), "");
+
+    // Remove links [text](url) -> keep text
+    text = std::regex_replace(text, std::regex("\\[([^\\]]*)\\]\\([^)]*\\)"), "$1");
+
+    // Remove HTML tags
+    text = std::regex_replace(text, std::regex("<[^>]+>"), "");
+
+    // Remove heading markers (# ## ### etc.)
+    text = std::regex_replace(text, std::regex("(?:^|\n)#{1,6}\\s*"), "\n");
+
+    // Remove bold/italic/strikethrough markers
+    text = std::regex_replace(text, std::regex("\\*{1,3}|_{1,3}|~~"), "");
+
+    // Remove blockquote markers
+    text = std::regex_replace(text, std::regex("(?:^|\n)>+\\s*"), "\n");
+
+    // Remove horizontal rules (---, ***, ___)
+    text = std::regex_replace(text, std::regex("(?:^|\n)[-*_]{3,}\\s*"), "\n");
+
+    // Remove unordered list markers (- * +)
+    text = std::regex_replace(text, std::regex("(?:^|\n)\\s*[-*+]\\s+"), "\n");
+
+    // Remove ordered list markers (1. 2. etc.)
+    text = std::regex_replace(text, std::regex("(?:^|\n)\\s*\\d+\\.\\s+"), "\n");
+
+    // Remove table separators (|---|---|)
+    text = std::regex_replace(text, std::regex("(?:^|\n)\\|?[\\s:]*[-]+[\\s:]*(?:\\|[\\s:]*[-]+[\\s:]*)*\\|?\\s*"), "\n");
+
+    // Remove table pipe characters
+    text = std::regex_replace(text, std::regex("\\|"), " ");
+
+    // Remove extra whitespace and newlines, then count non-whitespace characters
+    std::string clean;
+    for (size_t i = 0; i < text.size(); )
+    {
+        unsigned char c = static_cast<unsigned char>(text[i]);
+        // Skip ASCII whitespace
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+        {
+            ++i;
+            continue;
+        }
+        // Determine UTF-8 character length and keep it
+        int len = 1;
+        if (c >= 0xF0)      len = 4;
+        else if (c >= 0xE0) len = 3;
+        else if (c >= 0xC0) len = 2;
+
+        for (int j = 0; j < len && (i + j) < text.size(); ++j)
+            clean += text[i + j];
+        i += len;
+    }
+
+    return count_utf8_chars(clean);
+}
 
     // =================================
     // ConnectionPool
@@ -225,7 +318,7 @@ namespace blog
             auto guard = pool_.get_connection();
             pqxx::work txn(guard.get());
 
-            int word_count = static_cast<int>(content.size());
+            int word_count = count_markdown_words(content);
 
             pqxx::result rows = txn.exec_params(
                 "INSERT INTO posts (title, slug, summary, content, tags, word_count) "
@@ -256,7 +349,7 @@ namespace blog
             auto guard = pool_.get_connection();
             pqxx::work txn(guard.get());
 
-            int word_count = static_cast<int>(content.size());
+            int word_count = count_markdown_words(content);
 
             pqxx::result rows = txn.exec_params(
                 "UPDATE posts SET title = $1, summary = $2, content = $3, tags = $4, "

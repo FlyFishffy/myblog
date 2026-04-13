@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Post } from '../api'
+import { countMarkdownWords } from '../utils/wordCount'
 
 interface PostCardProps {
   post: Post
@@ -12,7 +13,7 @@ function PostCard({ post, isAdmin }: PostCardProps) {
   const updatedDate = new Date(post.updated_at).toLocaleDateString('zh-CN', dateOptions)
 
   const content = post.content || post.summary || ''
-  const wordCount = content.length
+  const wordCount = post.word_count || countMarkdownWords(content)
   const readingTime = Math.max(1, Math.ceil(wordCount / 400))
 
   const tags = post.tags ? post.tags.split(',').map(t => t.trim()).filter(Boolean) : []
